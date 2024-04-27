@@ -17,4 +17,6 @@ void freeValueArray(ValueArray *array);
 void initValueArray(ValueArray *array);
 void writeValueArray(ValueArray *array, Value value);
 
+void printValue(Value value);
+
 #endif

@@ -7,6 +7,7 @@
 // opcodes for different instructions
 typedef enum
 {
+    OP_CONSTANT,
     OP_RETURN,
 } OpCode;
 
