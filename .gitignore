@@ -1,2 +1,6 @@
+# files generated while building / running
 *.exe
 *.obj
+
+# config files for editor
+.vscode
