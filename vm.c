@@ -4,8 +4,14 @@
 
 VM vm;
 
+static void resetVMStack()
+{
+    vm.stackTop = vm.stack; // initially points to beginning of the array
+}
+
 void initVM()
 {
+    resetVMStack();
 }
 
 InterpretResult interpret(Chunk *chunk)
@@ -19,6 +25,18 @@ void freeVM()
 {
 }
 
+void pushToStack(Value value)
+{
+    *vm.stackTop = value;
+    vm.stackTop++;
+}
+
+Value popFromStack()
+{
+    vm.stackTop--;
+    return *vm.stackTop;
+}
+
 static InterpretResult run()
 {
 #define READ_BYTE() (*vm.instructionPointer++)
@@ -26,7 +44,17 @@ static InterpretResult run()
 
     for (;;)
     {
+
+// logic to debug the vm (prints stack and disassembles instructions)
 #ifdef DEBUG_TRACE_EXECUTION
+        printf("          ");
+        for (Value *slot = vm.stack; slot < vm.stackTop; slot++)
+        {
+            printf("[ ");
+            printValue(*slot);
+            printf(" ]");
+        }
+        printf("\n");
         disassembleInstruction(vm.chunk, (int)(vm.instructionPointer - vm.chunk->code));
 #endif
 
@@ -36,13 +64,15 @@ static InterpretResult run()
         {
         case OP_CONSTANT:
         {
+            printf("hello\n");
             Value constant = READ_CONSTANT();
-            printValue(constant);
-            printf("\n");
+            pushToStack(constant);
             break;
         }
         case OP_RETURN:
         {
+            printValue(popFromStack());
+            printf("\n");
             return INTERPRET_OK;
         }
 
