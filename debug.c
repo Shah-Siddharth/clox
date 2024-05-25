@@ -10,11 +10,12 @@ void disassembleChunk(Chunk *chunk, const char *name)
     for (int offset = 0; offset < chunk->count;)
     {
         // dissasembleInstruction() will also provide us the offset of the beginning of next instruction
-        offset = dissasembleInstruction(chunk, offset);
+        offset = disassembleInstruction(chunk, offset);
     }
 }
 
-int dissasembleInstruction(Chunk *chunk, int offset)
+// disassembles a single instruction
+int disassembleInstruction(Chunk *chunk, int offset)
 {
     printf("%04d ", offset);
 
