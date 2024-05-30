@@ -22,7 +22,7 @@ typedef enum
 } InterpretResult;
 
 void initVM();
-InterpretResult interpret(Chunk *chunk);
+InterpretResult interpretCode(const char *sourceCode);
 void freeVM();
 
 void pushToStack(Value value);

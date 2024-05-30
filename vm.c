@@ -14,11 +14,10 @@ void initVM()
     resetVMStack();
 }
 
-InterpretResult interpret(Chunk *chunk)
+InterpretResult interpretCode(const char *sourceCode)
 {
-    vm.chunk = chunk;
-    vm.instructionPointer = vm.chunk->code;
-    return run();
+    compileCode(sourceCode);
+    return INTERPRET_OK;
 }
 
 void freeVM()

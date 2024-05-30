@@ -60,7 +60,7 @@ static char *readFile(const char *path)
 static void runFile(const char *path)
 {
     char *sourceCode = readFile(path);
-    InterpretResult result = interpret(sourceCode);
+    InterpretResult result = interpretCode(sourceCode);
     free(sourceCode);
 
     if (result == INTERPRET_COMPILE_ERROR)
