@@ -20,9 +20,27 @@ void initScanner(const char *sourceCode)
     scanner.line = 1;
 }
 
+static char advance()
+{
+    scanner.current++;
+    return scanner.current[-1];
+}
+
 static bool isAtEnd()
 {
     return *scanner.current == '\0';
+}
+
+static bool match(char expected)
+{
+    if (isAtEnd())
+        return false;
+
+    if (*scanner.current != expected)
+        return false;
+
+    scanner.current++;
+    return true;
 }
 
 static Token createToken(TokenType type)
@@ -35,11 +53,13 @@ static Token createToken(TokenType type)
     return token;
 }
 
-static Token createErrorToken()
+static Token createErrorToken(const char *message)
 {
-    // TODO: add logic to include error msg.
     Token token;
     token.type = TOKEN_ERROR;
+    token.start = message;
+    token.length = (int)strlen(message);
+    token.line = scanner.line;
     return token;
 }
 
@@ -55,6 +75,44 @@ Token scanToken()
     if (isAtEnd())
         return createToken(TOKEN_EOF);
 
-    // TODO: add code for different token cases
+    char c = advance();
+
+    switch (c)
+    {
+
+    // single character tokens
+    case '(':
+        return createToken(TOKEN_LEFT_PAREN);
+    case ')':
+        return createToken(TOKEN_RIGHT_PAREN);
+    case '{':
+        return createToken(TOKEN_LEFT_BRACE);
+    case '}':
+        return createToken(TOKEN_RIGHT_BRACE);
+    case ';':
+        return createToken(TOKEN_SEMICOLON);
+    case ',':
+        return createToken(TOKEN_COMMA);
+    case '.':
+        return createToken(TOKEN_DOT);
+    case '-':
+        return createToken(TOKEN_MINUS);
+    case '+':
+        return createToken(TOKEN_PLUS);
+    case '/':
+        return createToken(TOKEN_SLASH);
+    case '*':
+        return createToken(TOKEN_STAR);
+
+        // single or double character tokens
+    case '!':
+        return createToken(match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
+    case '=':
+        return createToken(match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+    case '<':
+        return createToken(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+    case '>':
+        return createToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+    }
     return createErrorToken("Unexpected character.");
 }
