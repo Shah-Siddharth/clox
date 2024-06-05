@@ -31,6 +31,11 @@ static bool isAtEnd()
     return *scanner.current == '\0';
 }
 
+static bool isDigit(char c)
+{
+    return c >= '0' && c <= '9';
+}
+
 static bool match(char expected)
 {
     if (isAtEnd())
@@ -108,6 +113,40 @@ static Token createErrorToken(const char *message)
     return token;
 }
 
+static Token createNumberToken()
+{
+    while (isDigit(peek()))
+        advance();
+
+    // see if there is a fractional part
+    if (peek() == '.' && isDigit(peekNext()))
+    {
+        // consume the '.'
+        advance();
+
+        while (isDigit(peek()))
+            advance();
+    }
+
+    return createToken(TOKEN_NUMBER);
+}
+
+static Token createStringToken()
+{
+    while (peek() != '"' && !isAtEnd())
+    {
+        if (peek() == '\n')
+            scanner.line++;
+        advance();
+    }
+
+    if (isAtEnd())
+        return createErrorToken("Unterminated string.");
+
+    advance();
+    return createToken(TOKEN_STRING);
+}
+
 /*
 each time this function is called, a complete token is scanned.
 so, whenever function is executed, the scanner is always at the beginning of a new token.
@@ -123,6 +162,8 @@ Token scanToken()
         return createToken(TOKEN_EOF);
 
     char c = advance();
+    if (isDigit(c))
+        return createNumberToken();
 
     switch (c)
     {
@@ -160,6 +201,10 @@ Token scanToken()
         return createToken(match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
     case '>':
         return createToken(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+
+    // strings
+    case '"':
+        return createStringToken();
     }
     return createErrorToken("Unexpected character.");
 }
