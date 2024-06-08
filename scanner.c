@@ -26,6 +26,13 @@ static char advance()
     return scanner.current[-1];
 }
 
+static bool isAlpha(char c)
+{
+    return ((c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            c == '_');
+}
+
 static bool isAtEnd()
 {
     return *scanner.current == '\0';
@@ -93,6 +100,74 @@ static void skipWhiteSpace()
     }
 }
 
+static TokenType checkKeyword(int start, int length, const char *rest, TokenType type)
+{
+    // check if identifier is same length as keyword & if it matches the keyword name
+    if ((scanner.current - scanner.start == start + length) &&
+        memcmp(scanner.start + start, rest, length) == 0)
+        return type;
+
+    return TOKEN_IDENTIFIER;
+}
+
+/*
+function to check if the identifier is any of the reserved keywords
+uses a trie like logic to check character by character if the identifier is a keyword
+*/
+static TokenType getIdentifierType()
+{
+    switch (scanner.start[0])
+    {
+    case 'a':
+        return checkKeyword(1, 2, "nd", TOKEN_AND);
+    case 'c':
+        return checkKeyword(1, 4, "lass", TOKEN_CLASS);
+    case 'e':
+        return checkKeyword(1, 3, "lse", TOKEN_ELSE);
+    case 'f':
+        if (scanner.current - scanner.start > 1) // check if there are more chars in the identifier
+        {
+            switch (scanner.start[1])
+            {
+            case 'a':
+                return checkKeyword(2, 3, "lse", TOKEN_FALSE);
+            case 'o':
+                return checkKeyword(2, 1, "r", TOKEN_FOR);
+            case 'u':
+                return checkKeyword(2, 1, "n", TOKEN_FUN);
+            }
+        }
+    case 'i':
+        return checkKeyword(1, 1, "f", TOKEN_IF);
+    case 'n':
+        return checkKeyword(1, 2, "il", TOKEN_NIL);
+    case 'o':
+        return checkKeyword(1, 1, "r", TOKEN_OR);
+    case 'p':
+        return checkKeyword(1, 4, "rint", TOKEN_PRINT);
+    case 'r':
+        return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
+    case 's':
+        return checkKeyword(1, 4, "uper", TOKEN_SUPER);
+    case 't':
+        if (scanner.current - scanner.start > 1)
+        {
+            switch (scanner.start[1])
+            {
+            case 'h':
+                return checkKeyword(2, 2, "is", TOKEN_THIS);
+            case 'r':
+                return checkKeyword(2, 2, "ue", TOKEN_TRUE);
+            }
+        }
+    case 'v':
+        return checkKeyword(1, 2, "ar", TOKEN_VAR);
+    case 'w':
+        return checkKeyword(1, 4, "hile", TOKEN_WHILE);
+    }
+    return TOKEN_IDENTIFIER;
+}
+
 static Token createToken(TokenType type)
 {
     Token token;
@@ -111,6 +186,13 @@ static Token createErrorToken(const char *message)
     token.length = (int)strlen(message);
     token.line = scanner.line;
     return token;
+}
+
+static Token createIdentifierToken()
+{
+    while (isAlpha(peek()) || isDigit(peek()))
+        advance();
+    return createToken(getIdentifierType());
 }
 
 static Token createNumberToken()
@@ -162,6 +244,8 @@ Token scanToken()
         return createToken(TOKEN_EOF);
 
     char c = advance();
+    if (isAlpha(c))
+        return createIdentifierToken();
     if (isDigit(c))
         return createNumberToken();
 
