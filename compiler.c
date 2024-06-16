@@ -13,6 +13,22 @@ typedef struct
     bool panicMode;
 } Parser;
 
+typedef enum
+{
+    // precedence levels from lowest to highest
+    PREC_NONE,
+    PREC_ASSIGNMENT,
+    PREC_OR,         // or
+    PREC_AND,        // and
+    PREC_EQUALITY,   // == !=
+    PREC_COMPARISON, // < > <= >=
+    PREC_TERM,       // + -
+    PREC_FACTOR,     // * /
+    PREC_UNARY,      // ! -
+    PREC_CALL,       // . ()
+    PREC_PRIMARY
+} Precedence;
+
 Parser parser;
 Chunk *compilingChunk;
 
@@ -128,8 +144,42 @@ static void compileNumberToken()
     emitConstant(value);
 }
 
+static void compileUnaryExpression()
+{
+    TokenType operatorType = parser.previous.type;
+
+    // compile the operand
+    parsePrecedence(PREC_UNARY);
+
+    // emit operator instruction
+    switch (operatorType)
+    {
+    case TOKEN_MINUS:
+        emitByte(OP_NEGATE);
+        break;
+
+    default:
+        return;
+    }
+}
+
+// parse expression of given precedence, and any expressions of higher precedence
+static void parsePrecedence(Precedence precedence)
+{
+}
+
 static void expression()
 {
+    // parse lowest precedence level, which automatically parses higher precedences
+    parsePrecedence(PREC_ASSIGNMENT);
+}
+
+// assuming '(' has already been consumed, this function aims to parse the ')'
+static void grouping()
+{
+    // recursively compile the expression between the parentheses
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 void compileCode(const char *sourceCode, Chunk *chunk)
