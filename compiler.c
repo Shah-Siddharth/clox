@@ -5,6 +5,10 @@
 #include "compiler.h"
 #include "scanner.h"
 
+#ifdef DEBUG_PRINT_CODE
+#include "debug.h"
+#endif
+
 typedef struct
 {
     Token current;
@@ -146,6 +150,10 @@ static void emitReturn()
 static void endCompiler()
 {
     emitReturn();
+#ifdef DEBUG_PRINT_CODE
+    if (!parser.hadError)
+        disassembleChunk(getCurrentChunk(), "code");
+#endif
 }
 
 static void expression();
@@ -158,6 +166,22 @@ static ParseRule *getRule(TokenType type)
 // parse expression of given precedence, and any expressions of higher precedence
 static void parsePrecedence(Precedence precedence)
 {
+    advance();
+    ParseFn prefixRule = getRule(parser.previous.type)->prefix;
+    if (prefixRule == NULL)
+    {
+        errorAtPrevious("Expect expression");
+        return;
+    }
+
+    prefixRule();
+
+    while (precedence <= getRule(parser.current.type)->precedence)
+    {
+        advance();
+        ParseFn infixRule = getRule(parser.previous.type)->infix;
+        infixRule();
+    }
 }
 
 static void binary()
