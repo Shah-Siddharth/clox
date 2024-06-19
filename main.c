@@ -20,7 +20,7 @@ static void startRepl()
             break;
         }
 
-        interpret(line);
+        interpretCode(line);
     }
 }
 

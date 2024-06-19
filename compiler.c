@@ -157,11 +157,8 @@ static void endCompiler()
 }
 
 static void expression();
-
-static ParseRule *getRule(TokenType type)
-{
-    return &rules[type];
-}
+static void grouping();
+static ParseRule *getRule(TokenType type);
 
 // parse expression of given precedence, and any expressions of higher precedence
 static void parsePrecedence(Precedence precedence)
@@ -277,6 +274,11 @@ ParseRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
+static ParseRule *getRule(TokenType type)
+{
+    return &rules[type];
+}
+
 static void expression()
 {
     // parse lowest precedence level, which automatically parses higher precedences
@@ -291,7 +293,7 @@ static void grouping()
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-void compileCode(const char *sourceCode, Chunk *chunk)
+bool compileCode(const char *sourceCode, Chunk *chunk)
 {
     initScanner(sourceCode);
     parser.hadError = false;
