@@ -89,14 +89,6 @@ static InterpretResult run()
         pushToStack(valueType(a op b));                 \
     } while (false)
 
-#define BINARY_OP(op)              \
-    do                             \
-    {                              \
-        double b = popFromStack(); \
-        double a = popFromStack(); \
-        pushToStack(a op b);       \
-    } while (false)
-
     for (;;)
     {
 
