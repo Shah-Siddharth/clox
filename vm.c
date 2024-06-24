@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "common.h"
@@ -9,6 +10,20 @@ VM vm;
 static void resetVMStack()
 {
     vm.stackTop = vm.stack; // initially points to beginning of the array
+}
+
+static void runtimeError(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fputs("\n", stderr);
+
+    size_t instruction = vm.instructionPointer - vm.chunk->code - 1;
+    int line = vm.chunk->lines[instruction];
+    fprintf(stderr, "[line %d] in script\n", line);
+    resetVMStack();
 }
 
 void initVM()
@@ -52,10 +67,27 @@ Value popFromStack()
     return *vm.stackTop;
 }
 
+static Value peek(int distance)
+{
+    return vm.stackTop[-(distance + 1)];
+}
+
 static InterpretResult run()
 {
 #define READ_BYTE() (*vm.instructionPointer++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define BINARY_OP(valueType, op)                        \
+    do                                                  \
+    {                                                   \
+        if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) \
+        {                                               \
+            runtimeError("Operands must be numbers.");  \
+            return INTERPRET_RUNTIME_ERROR;             \
+        }                                               \
+        double b = AS_NUMBER(popFromStack());           \
+        double a = AS_NUMBER(popFromStack());           \
+        pushToStack(valueType(a op b));                 \
+    } while (false)
 
 #define BINARY_OP(op)              \
     do                             \
@@ -93,23 +125,26 @@ static InterpretResult run()
         }
 
         case OP_ADD:
-            BINARY_OP(+);
+            BINARY_OP(NUMBER_VAL, +);
             break;
         case OP_SUBTRACT:
-            BINARY_OP(-);
+            BINARY_OP(NUMBER_VAL, -);
             break;
         case OP_MULTIPLY:
-            BINARY_OP(*);
+            BINARY_OP(NUMBER_VAL, *);
             break;
         case OP_DIVIDE:
-            BINARY_OP(/);
+            BINARY_OP(NUMBER_VAL, /);
             break;
 
         case OP_NEGATE:
-        {
-            pushToStack(-popFromStack());
+            if (!IS_NUMBER(peek(0)))
+            {
+                runtimeError("Operand must be a number.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            pushToStack(NUMBER_VAL(-AS_NUMBER(popFromStack())));
             break;
-        }
         case OP_RETURN:
         {
             printValue(popFromStack());
