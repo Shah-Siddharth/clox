@@ -115,6 +115,15 @@ static InterpretResult run()
             pushToStack(constant);
             break;
         }
+        case OP_NIL:
+            pushToStack(NIL_VAL);
+            break;
+        case OP_FALSE:
+            pushToStack(BOOL_VAL(false));
+            break;
+        case OP_TRUE:
+            pushToStack(BOOL_VAL(true));
+            break;
 
         case OP_ADD:
             BINARY_OP(NUMBER_VAL, +);

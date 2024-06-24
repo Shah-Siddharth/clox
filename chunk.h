@@ -8,6 +8,9 @@
 typedef enum
 {
     OP_CONSTANT,
+    OP_NIL,
+    OP_FALSE,
+    OP_TRUE,
 
     // binary arithmetic operators
     OP_ADD,
