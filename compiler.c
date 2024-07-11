@@ -240,10 +240,12 @@ static void compileUnaryExpression()
     // emit operator instruction
     switch (operatorType)
     {
+    case TOKEN_BANG:
+        emitByte(OP_NOT);
+        break;
     case TOKEN_MINUS:
         emitByte(OP_NEGATE);
         break;
-
     default:
         return;
     }
@@ -261,7 +263,7 @@ ParseRule rules[] = {
     [TOKEN_SEMICOLON] = {NULL, NULL, PREC_NONE},
     [TOKEN_SLASH] = {NULL, binary, PREC_FACTOR},
     [TOKEN_STAR] = {NULL, binary, PREC_FACTOR},
-    [TOKEN_BANG] = {NULL, NULL, PREC_NONE},
+    [TOKEN_BANG] = {compileUnaryExpression, NULL, PREC_NONE},
     [TOKEN_BANG_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_EQUAL] = {NULL, NULL, PREC_NONE},
     [TOKEN_EQUAL_EQUAL] = {NULL, NULL, PREC_NONE},
