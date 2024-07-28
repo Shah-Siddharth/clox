@@ -18,6 +18,11 @@ typedef enum
     OP_MULTIPLY,
     OP_DIVIDE,
 
+    // comparison operators
+    OP_EQUAL,
+    OP_GREATER,
+    OP_LESS,
+
     OP_NOT,
     OP_NEGATE,
     OP_RETURN,
