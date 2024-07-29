@@ -16,7 +16,28 @@ struct Object
     ObjectType type;
 };
 
+// string objects
+struct StringObject
+{
+    Object object;
+    int length;
+    char *chars;
+};
+
+static inline bool isObjectType(Value value, ObjectType type)
+{
+    return IS_OBJECT(value) && AS_OBJECT(value)->type == type;
+}
+
 // macro that returns the type of object
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
+
+#define IS_STRING(value) isObjectType(value, OBJECT_STRING)
+
+// takes pointer to object of type string and returns StringObject* pointer
+#define AS_STRING(value) ((StringObject *)AS_OBJECT(value))
+
+// takes pointer to object of type string and returns the character array of the object
+#define AS_CSTRING(value) (((StringObject *)AS_OBJECT(value))->chars)
 
 #endif
