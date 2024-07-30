@@ -247,6 +247,13 @@ static void compileNumberToken()
     emitConstant(NUMBER_VAL(value));
 }
 
+static void string()
+{
+    // the +1 and -2 are for trimming the quotation marks
+    emitConstant(OBJECT_VAL(copyString(parser.previous.start + 1,
+                                       parser.previous.length - 2)));
+}
+
 static void compileUnaryExpression()
 {
     TokenType operatorType = parser.previous.type;
@@ -289,7 +296,7 @@ ParseRule rules[] = {
     [TOKEN_LESS] = {NULL, binary, PREC_NONE},
     [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_NONE},
     [TOKEN_IDENTIFIER] = {NULL, NULL, PREC_NONE},
-    [TOKEN_STRING] = {NULL, NULL, PREC_NONE},
+    [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {compileNumberToken, NULL, PREC_NONE},
     [TOKEN_AND] = {NULL, NULL, PREC_NONE},
     [TOKEN_CLASS] = {NULL, NULL, PREC_NONE},

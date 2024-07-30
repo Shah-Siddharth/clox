@@ -29,7 +29,7 @@ typedef struct
 #define BOOL_VAL(value) ((Value){VAL_BOOL, {.boolean = value}})
 #define NIL_VAL ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
-#define OBJECT_VAL(object) ((Value){VAL_OBJECT, {.object = (Obj *)object}})
+#define OBJECT_VAL(object) ((Value){VAL_OBJECT, {.object = (Object *)object}})
 
 // macros to check Value's type. Return 'true' if type matches expected type
 #define IS_BOOL(value) ((value).type == VAL_BOOL)

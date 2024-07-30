@@ -24,6 +24,8 @@ struct StringObject
     char *chars;
 };
 
+StringObject *copyString(const char *chars, int length);
+
 static inline bool isObjectType(Value value, ObjectType type)
 {
     return IS_OBJECT(value) && AS_OBJECT(value)->type == type;
