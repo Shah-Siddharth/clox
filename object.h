@@ -25,6 +25,8 @@ struct StringObject
 };
 
 StringObject *copyString(const char *chars, int length);
+StringObject *takeString(char *chars, int length);
+void printObject(Value value);
 
 static inline bool isObjectType(Value value, ObjectType type)
 {
