@@ -32,7 +32,7 @@ static inline bool isObjectType(Value value, ObjectType type)
 }
 
 // macro that returns the type of object
-#define OBJ_TYPE(value) (AS_OBJ(value)->type)
+#define OBJ_TYPE(value) (AS_OBJECT(value)->type)
 
 #define IS_STRING(value) isObjectType(value, OBJECT_STRING)
 
