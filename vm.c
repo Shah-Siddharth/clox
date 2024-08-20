@@ -164,7 +164,7 @@ static InterpretResult run()
 
         case OP_ADD:
         {
-            if (IS_STRING(peek(0)) && IS_NUMBER(peek(1)))
+            if (IS_STRING(peek(0)) && IS_STRING(peek(1)))
             {
                 concatenate();
             }
