@@ -12,6 +12,9 @@ typedef struct
     uint8_t *instructionPointer; // points to the next instruction
     Value stack[VM_STACK_MAX];
     Value *stackTop; // points past the last item of the stack
+
+    // All objects are stored in a singly linked list. This pointer points to the head of the list.
+    Object *objects;
 } VM;
 
 typedef enum
@@ -20,6 +23,8 @@ typedef enum
     INTERPRET_COMPILE_ERROR,
     INTERPRET_RUNTIME_ERROR
 } InterpretResult;
+
+extern VM vm;
 
 void initVM();
 InterpretResult interpretCode(const char *sourceCode);

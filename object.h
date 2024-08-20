@@ -14,6 +14,7 @@ typedef enum
 struct Object
 {
     ObjectType type;
+    struct Object *next; // points to the next object in the linked list
 };
 
 // string objects

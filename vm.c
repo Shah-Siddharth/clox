@@ -32,6 +32,7 @@ static void runtimeError(const char *format, ...)
 void initVM()
 {
     resetVMStack();
+    vm.objects = NULL;
 }
 
 InterpretResult interpretCode(const char *sourceCode)
@@ -56,6 +57,7 @@ InterpretResult interpretCode(const char *sourceCode)
 
 void freeVM()
 {
+    freeObjects();
 }
 
 void pushToStack(Value value)

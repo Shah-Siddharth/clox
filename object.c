@@ -14,6 +14,11 @@ static Object *allocateObject(size_t size, ObjectType type)
 {
     Object *object = (Object *)reallocate(NULL, 0, size);
     object->type = type;
+
+    // The newly allocated object is added to the beginning of the singly linked list.
+    object->next = vm.objects;
+    vm.objects = object;
+
     return object;
 }
 
