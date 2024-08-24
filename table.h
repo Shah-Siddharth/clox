@@ -4,21 +4,20 @@
 #include "common.h"
 #include "value.h"
 
-typedef struct 
+typedef struct
 {
-    StringObject* key;
+    StringObject *key;
     Value value;
 } Entry;
-
 
 typedef struct
 {
     int count;
     int capacity;
-    Entry* entries;
+    Entry *entries;
 } Table;
 
-void initTable(Table* table);
-void freeTable(Table* table);
+void initTable(Table *table);
+void freeTable(Table *table);
 
 #endif
