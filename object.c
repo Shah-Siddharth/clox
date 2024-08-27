@@ -22,27 +22,41 @@ static Object *allocateObject(size_t size, ObjectType type)
     return object;
 }
 
-static StringObject *allocateString(char *chars, int length)
+static StringObject *allocateString(char *chars, int length, uint32_t hash)
 {
     StringObject *string = ALLOCATE_OBJECT(StringObject, OBJECT_STRING);
     string->length = length;
     string->chars = chars;
+    string->hash = hash;
     return string;
+}
+
+// hashes a string using the "FNV-1a" hash function
+static uint32_t hashString(const char *key, int length)
+{
+    uint32_t hash = 2166136261u;
+    for (int i = 0; i < length; i++)
+    {
+        hash ^= (uint8_t)key[i];
+        hash *= 16777619;
+    }
 }
 
 // allocates array just big enough for the string.
 // then copies the characters from the lexeme to the array
 StringObject *copyString(const char *chars, int length)
 {
+    uint32_t hash = hashString(chars, length);
     char *heapChars = ALLOCATE(char, length + 1);
     memcpy(heapChars, chars, length);
     heapChars[length] = '\0';
-    return allocateString(heapChars, length);
+    return allocateString(heapChars, length, hash);
 }
 
 StringObject *takeString(char *chars, int length)
 {
-    return allocateString(chars, length);
+    uint32_t hash = hashString(chars, length);
+    return allocateString(chars, length, hash);
 }
 
 void printObject(Value value)

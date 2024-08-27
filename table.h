@@ -20,4 +20,11 @@ typedef struct
 void initTable(Table *table);
 void freeTable(Table *table);
 
+// adds an entry to the hash table.
+// if an entry is already present for the key, it is overwritten by the new value
+// returns true if the entry was added
+bool tableAdd(Table *table, StringObject *key, Value value);
+
+// add all entries of one hash table to another
+void tableAddAll(Table *from, Table *to);
 #endif

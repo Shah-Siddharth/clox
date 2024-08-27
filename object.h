@@ -23,6 +23,7 @@ struct StringObject
     Object object;
     int length;
     char *chars;
+    uint32_t hash; // since strings are immutable, we can calculate and store hash up front
 };
 
 StringObject *copyString(const char *chars, int length);
