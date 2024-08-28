@@ -27,4 +27,13 @@ bool tableAdd(Table *table, StringObject *key, Value value);
 
 // add all entries of one hash table to another
 void tableAddAll(Table *from, Table *to);
+
+// deletes an entry from the hash table
+bool tableDelete(Table *table, StringObject *key);
+
+// retrieves a value from the hash table
+// returns true if an entry with the given key is found. Returns false otherwise
+// if entry exists, the value argument that was passed will point to the resulting value
+bool tableGet(Table *table, StringObject *key, Value *value);
+
 #endif

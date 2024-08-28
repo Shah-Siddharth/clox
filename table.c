@@ -100,3 +100,32 @@ void tableAddAll(Table *from, Table *to)
         }
     }
 }
+
+bool tableDelete(Table *table, StringObject *key)
+{
+    if (table->count == 0)
+        return false;
+
+    // Find the entry
+    Entry *entry = findEntry(key, table->entries, table->capacity);
+    if (entry->key == NULL)
+        return;
+
+    // Delete the entry and place a tombstone (key = NULL and value = True)
+    entry->key = NULL;
+    entry->value = BOOL_VAL(true);
+    return true;
+}
+
+bool tableGet(Table *table, StringObject *key, Value *value)
+{
+    if (table->count == 0)
+        return false;
+
+    Entry *entry = findEntry(key, table->entries, table->capacity);
+    if (entry->key == NULL)
+        return false;
+
+    *value = entry->value;
+    return true;
+}
