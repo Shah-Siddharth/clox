@@ -20,6 +20,10 @@ static void adjustCapacity(Table *table, int capacity)
         newEntries[i].value = NIL_VAL;
     }
 
+    // reset table count and calculate again while inserting
+    // this will give new count without tombstones
+    table->count = 0;
+
     // insert all entries from old array to new array
     for (int i = 0; i < table->capacity; i++)
     {
@@ -30,6 +34,7 @@ static void adjustCapacity(Table *table, int capacity)
         Entry *dest = findEntry(entry->key, newEntries, capacity);
         dest->key = entry->key;
         dest->value = entry->value;
+        table->count++;
     }
 
     // release memory for old entries array
@@ -44,12 +49,30 @@ static void adjustCapacity(Table *table, int capacity)
 static Entry *findEntry(StringObject *key, Entry *entries, int capacity)
 {
     uint32_t index = key->hash % capacity;
+    Entry *tombstone = NULL;
     for (;;)
     {
         Entry *entry = &entries[index];
-        // key is already present or bucket is empty
-        if (entry->key == key || entry->key == NULL)
+        if (entry->key == NULL)
         {
+            // entry is empty
+            if (IS_NIL(entry->value))
+            {
+                // we find a truly empty entry, i.e. the key is not present
+                // if we have passed some tombstone earlier, return that bucket
+                // so tombstone bucket is reused for new values
+                return tombstone != NULL ? tombstone : entry;
+            }
+            else
+            {
+                // it is a tombstone
+                if (tombstone == NULL)
+                    tombstone = entry;
+            }
+        }
+        else if (entry->key = key)
+        {
+            // Found the key
             return entry;
         }
 
@@ -81,7 +104,10 @@ void tableAdd(Table *table, StringObject *key, Value value)
 
     Entry *entry = findEntry(key, table->entries, table->capacity);
     bool isNewKey = entry->key == NULL;
-    if (isNewKey)
+
+    // increment count only if new entry goes into entirely empty bucket
+    // and not while reusing a tombstone
+    if (isNewKey && IS_NIL(entry->value))
         table->count++;
 
     entry->key = key;
