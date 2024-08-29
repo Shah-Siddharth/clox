@@ -32,6 +32,7 @@ static void runtimeError(const char *format, ...)
 void initVM()
 {
     resetVMStack();
+    initTable(&vm.strings);
     vm.objects = NULL;
 }
 
@@ -57,6 +58,7 @@ InterpretResult interpretCode(const char *sourceCode)
 
 void freeVM()
 {
+    freeTable(&vm.strings);
     freeObjects();
 }
 

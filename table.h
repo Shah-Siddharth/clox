@@ -31,6 +31,34 @@ void tableAddAll(Table *from, Table *to);
 // deletes an entry from the hash table
 bool tableDelete(Table *table, StringObject *key);
 
+//
+StringObject *tableFindString(Table *table, const char *chars, int length, uint32_t hash)
+{
+    if (table->count == 0)
+        return NULL;
+
+    uint32_t index = hash % table->capacity;
+    for (;;)
+    {
+        Entry *entry = &table->entries[index];
+        if (entry->key == NULL)
+        {
+            // stop if we find an empty non-tombstone bucket
+            if (IS_NIL(entry->value))
+                return NULL;
+        }
+        else if (entry->key->length == length &&
+                 entry->key->hash == hash &&
+                 memcmp(entry->key->chars, chars, length) == 0)
+        {
+            // we find the string
+            return entry->key;
+        }
+
+        index = (index + 1) % table->capacity;
+    }
+}
+
 // retrieves a value from the hash table
 // returns true if an entry with the given key is found. Returns false otherwise
 // if entry exists, the value argument that was passed will point to the resulting value
