@@ -206,10 +206,15 @@ static InterpretResult run()
             }
             pushToStack(NUMBER_VAL(-AS_NUMBER(popFromStack())));
             break;
-        case OP_RETURN:
+        case OP_PRINT:
         {
             printValue(popFromStack());
             printf("\n");
+            break;
+        }
+        case OP_RETURN:
+        {
+            // Exit interpreter
             return INTERPRET_OK;
         }
 

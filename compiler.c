@@ -111,6 +111,19 @@ static void consume(TokenType type, const char *message)
     errorAtCurrent(message);
 }
 
+static bool checkTokenType(TokenType type)
+{
+    return parser.current.type == type;
+}
+
+static bool match(TokenType type)
+{
+    if (!checkTokenType(type))
+        return false;
+    advance();
+    return true;
+}
+
 // append byte to chunk
 static void emitByte(uint8_t byte)
 {
@@ -329,6 +342,29 @@ static void expression()
     parsePrecedence(PREC_ASSIGNMENT);
 }
 
+static void printStatement()
+{
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emitByte(OP_PRINT);
+}
+
+static void statement();
+static void declaration();
+
+static void declaration()
+{
+    statement();
+}
+
+static void statement()
+{
+    if (match(TOKEN_PRINT))
+    {
+        printStatement();
+    }
+}
+
 // assuming '(' has already been consumed, this function aims to parse the ')'
 static void grouping()
 {
@@ -346,8 +382,12 @@ bool compileCode(const char *sourceCode, Chunk *chunk)
     compilingChunk = chunk;
 
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression.");
+
+    while (!match(TOKEN_EOF))
+    {
+        declaration();
+    }
+
     endCompiler();
     return !parser.hadError;
 }
