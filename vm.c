@@ -212,6 +212,9 @@ static InterpretResult run()
             printf("\n");
             break;
         }
+        case OP_POP:
+            popFromStack();
+            break;
         case OP_RETURN:
         {
             // Exit interpreter
