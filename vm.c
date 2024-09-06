@@ -32,6 +32,7 @@ static void runtimeError(const char *format, ...)
 void initVM()
 {
     resetVMStack();
+    initTable(&vm.globals);
     initTable(&vm.strings);
     vm.objects = NULL;
 }
@@ -58,6 +59,7 @@ InterpretResult interpretCode(const char *sourceCode)
 
 void freeVM()
 {
+    freeTable(&vm.globals);
     freeTable(&vm.strings);
     freeObjects();
 }
@@ -103,6 +105,7 @@ static InterpretResult run()
 {
 #define READ_BYTE() (*vm.instructionPointer++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                        \
     do                                                  \
     {                                                   \
@@ -215,6 +218,13 @@ static InterpretResult run()
         case OP_POP:
             popFromStack();
             break;
+        case OP_DEFINE_GLOBAL:
+        {
+            StringObject *name = READ_STRING();
+            tableAdd(&vm.globals, name, peek(0));
+            popFromStack();
+            break;
+        }
         case OP_RETURN:
         {
             // Exit interpreter
@@ -228,5 +238,6 @@ static InterpretResult run()
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_STRING
 #undef BINARY_OP
 }

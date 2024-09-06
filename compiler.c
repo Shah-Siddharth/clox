@@ -331,6 +331,24 @@ ParseRule rules[] = {
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},
 };
 
+// takes a token and adds its lexeme to the chunk's constant table as a string
+// returns index of that constant in the table
+static uint8_t identifierConstant(Token *name)
+{
+    return makeConstant(OBJECT_VAL(copyString(name->start, name->length)));
+}
+
+static uint8_t parseVariable(const char *errorMessage)
+{
+    consume(TOKEN_IDENTIFIER, errorMessage);
+    return identifierConstant(&parser.previous);
+}
+
+static void defineVariable(uint8_t global)
+{
+    emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
 static ParseRule *getRule(TokenType type)
 {
     return &rules[type];
@@ -340,6 +358,25 @@ static void expression()
 {
     // parse lowest precedence level, which automatically parses higher precedences
     parsePrecedence(PREC_ASSIGNMENT);
+}
+
+static void varDeclaration()
+{
+    uint8_t global = parseVariable("Expect variable name.");
+
+    // if variable is also being initialized
+    if (match(TOKEN_EQUAL))
+    {
+        expression();
+    }
+    // if no initialization, implicitly assign value = nil
+    else
+    {
+        emitByte(OP_NIL);
+    }
+    consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+
+    defineVariable(global);
 }
 
 static void expressionStatement()
@@ -389,7 +426,14 @@ static void declaration();
 
 static void declaration()
 {
-    statement();
+    if (match(TOKEN_VAR))
+    {
+        varDeclaration();
+    }
+    else
+    {
+        statement();
+    }
     if (parser.panicMode)
         synchronize();
 }
