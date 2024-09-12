@@ -225,6 +225,18 @@ static InterpretResult run()
             popFromStack();
             break;
         }
+        case OP_GET_GLOBAL:
+        {
+            StringObject *name = READ_STRING();
+            Value value;
+            if (!tableGet(&vm.globals, name, &value))
+            {
+                runtimeError("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            pushToStack(value);
+            break;
+        }
         case OP_RETURN:
         {
             // Exit interpreter
