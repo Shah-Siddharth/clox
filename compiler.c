@@ -34,7 +34,7 @@ typedef enum
 } Precedence;
 
 // ParseFn is simply a function type that takes no args and returns nothing
-typedef void (*ParseFn)();
+typedef void (*ParseFn)(bool canAssign);
 
 typedef struct
 {
@@ -184,17 +184,24 @@ static void parsePrecedence(Precedence precedence)
         return;
     }
 
-    prefixRule();
+    // make sure precedence is low enough to allow assignment
+    bool canAssign = precedence <= PREC_ASSIGNMENT;
+    prefixRule(canAssign);
 
     while (precedence <= getRule(parser.current.type)->precedence)
     {
         advance();
         ParseFn infixRule = getRule(parser.previous.type)->infix;
-        infixRule();
+        infixRule(canAssign);
+    }
+
+    if (canAssign && match(TOKEN_EQUAL))
+    {
+        errorAtCurrent("Invalid assignment target.");
     }
 }
 
-static void binary()
+static void binary(bool canAssign)
 {
     TokenType operatorType = parser.previous.type;
     ParseRule *rule = getRule(operatorType);
@@ -236,7 +243,7 @@ static void binary()
     }
 }
 
-static void literal()
+static void literal(bool canAssign)
 {
     switch (parser.previous.type)
     {
@@ -254,31 +261,41 @@ static void literal()
     }
 }
 
-static void compileNumberToken()
+static void compileNumberToken(bool canAssign)
 {
     double value = strtod(parser.previous.start, NULL);
     emitConstant(NUMBER_VAL(value));
 }
 
-static void string()
+static void string(bool canAssign)
 {
     // the +1 and -2 are for trimming the quotation marks
     emitConstant(OBJECT_VAL(copyString(parser.previous.start + 1,
                                        parser.previous.length - 2)));
 }
 
-static void namedVariable(Token name)
+static void namedVariable(Token name, bool canAssign)
 {
     uint8_t arg = identifierConstant(&name);
-    emitBytes(OP_GET_GLOBAL, arg);
+
+    if (canAssign && match(TOKEN_EQUAL))
+    {
+        // if there is an equal sign after an identifier, it means it is an assignment operation
+        expression();
+        emitBytes(OP_SET_GLOBAL, arg);
+    }
+    else
+    {
+        emitBytes(OP_GET_GLOBAL, arg);
+    }
 }
 
-static void variable()
+static void variable(bool canAssign)
 {
-    namedVariable(parser.previous);
+    namedVariable(parser.previous, canAssign);
 }
 
-static void compileUnaryExpression()
+static void compileUnaryExpression(bool canAssign)
 {
     TokenType operatorType = parser.previous.type;
 
@@ -462,7 +479,7 @@ static void statement()
 }
 
 // assuming '(' has already been consumed, this function aims to parse the ')'
-static void grouping()
+static void grouping(bool canAssign)
 {
     // recursively compile the expression between the parentheses
     expression();
