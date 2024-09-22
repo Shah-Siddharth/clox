@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -183,6 +184,14 @@ static void beginScope()
 static void endScope()
 {
     current->scopeDepth--;
+
+    // remove local variables from the stack after their scope ends.
+    while (current->localCount > 0 &&
+           current->locals[current->localCount - 1].depth > current->scopeDepth)
+    {
+        emitByte(OP_POP);
+        current->localCount--;
+    }
 }
 
 static void endCompiler()
@@ -322,6 +331,30 @@ static void namedVariable(Token name, bool canAssign)
     }
 }
 
+// record the existence of a local variable.
+static void declareVariable()
+{
+    if (current->scopeDepth == 0)
+        return;
+    Token *name = &parser.previous;
+
+    // throw error if there is an already existing variable with the same name in the current scope.
+    for (int i = current->localCount - 1; i >= 0; i--)
+    {
+        Local *local = &current->locals[i];
+        if (local->depth != -1 && local->depth < current->scopeDepth)
+        {
+            break;
+        }
+
+        if (identifiersEqual(name, &local->name))
+        {
+            errorAtCurrent("Already a variable with this name in this scope");
+        }
+    }
+    addLocal(*name);
+}
+
 static void variable(bool canAssign)
 {
     namedVariable(parser.previous, canAssign);
@@ -398,14 +431,47 @@ static uint8_t identifierConstant(Token *name)
     return makeConstant(OBJECT_VAL(copyString(name->start, name->length)));
 }
 
+static bool identifiersEqual(Token *a, Token *b)
+{
+    if (a->length != b->length)
+        return false;
+    return memcmp(a->start, b->start, a->length) == 0;
+}
+
+// add a local variable to the compiler's list of variables in the current scope.
+static void addLocal(Token name)
+{
+    if (current->localCount == UINT8_COUNT)
+    {
+        errorAtCurrent("Too many local variables in a function.");
+        return;
+    }
+    Local *local = &current->locals[current->localCount++];
+    local->name = name;
+    local->depth = current->scopeDepth;
+}
+
 static uint8_t parseVariable(const char *errorMessage)
 {
     consume(TOKEN_IDENTIFIER, errorMessage);
+
+    declareVariable();
+    // if we are in a local scope, no need to add variable to contant table.
+    // just return a dummy table index.
+    if (current->scopeDepth > 0)
+        return 0;
+
     return identifierConstant(&parser.previous);
 }
 
 static void defineVariable(uint8_t global)
 {
+    // if we are in local scope, don't emit code to create variable.
+    // because the local variable has been allocated at the top of the stack.
+    if (current->scopeDepth > 0)
+    {
+        return;
+    }
     emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
