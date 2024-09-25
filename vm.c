@@ -218,6 +218,20 @@ static InterpretResult run()
         case OP_POP:
             popFromStack();
             break;
+        // locate the value from the stack and push it to the top of the stack.
+        case OP_GET_LOCAL:
+        {
+            uint8_t slot = READ_BYTE();
+            pushToStack(vm.stack[slot]);
+            break;
+        }
+        // take the assigned value from top of the stack and store it in the stack slot.
+        case OP_SET_LOCAL:
+        {
+            uint8_t slot = READ_BYTE();
+            vm.stack[slot] = peek(0);
+            break;
+        }
         case OP_DEFINE_GLOBAL:
         {
             StringObject *name = READ_STRING();
