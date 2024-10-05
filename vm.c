@@ -105,6 +105,11 @@ static InterpretResult run()
 {
 #define READ_BYTE() (*vm.instructionPointer++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+
+// takes the next two bytes from chunk and build a 16 bit unsigned int out of them
+#define READ_SHORT() \
+    (vm.instructionPointer += 2, (uint16_t)((vm.instructionPointer[-2] << 8) | vm.instructionPointer[-1]))
+
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                        \
     do                                                  \
@@ -260,6 +265,13 @@ static InterpretResult run()
                 runtimeError("Undefined variable '%s'.", name->chars);
                 return INTERPRET_RUNTIME_ERROR;
             }
+            break;
+        }
+        case OP_JUMP_IF_FALSE:
+        {
+            uint16_t offset = READ_SHORT();
+            if (isFalsey(peek(0)))
+                vm.instructionPointer += offset;
             break;
         }
         case OP_RETURN:

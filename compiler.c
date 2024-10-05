@@ -146,6 +146,14 @@ static void emitByte(uint8_t byte)
     writeChunk(getCurrentChunk(), byte, parser.previous.line);
 }
 
+static int emitJump(uint8_t instruction)
+{
+    emitByte(instruction);
+    emitByte(0xff);
+    emitByte(0xff);
+    return getCurrentChunk()->count - 2;
+}
+
 // append two bytes to chunk. (convenience function made for two byte operations)
 static void emitBytes(uint8_t byte1, uint8_t byte2)
 {
@@ -169,6 +177,18 @@ static uint8_t makeConstant(Value value)
 static void emitConstant(Value value)
 {
     emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+static void patchJump(int offset)
+{
+    int jump = getCurrentChunk()->count - offset - 2;
+    if (jump > UINT16_MAX)
+    {
+        errorAtCurrent("Too much code to jump over.");
+    }
+
+    getCurrentChunk()->code[offset] = (jump >> 8) && 0xff;
+    getCurrentChunk()->code[offset + 1] = jump & 0xff;
 }
 
 static void emitReturn()
@@ -555,6 +575,18 @@ static void expressionStatement()
     emitByte(OP_POP);
 }
 
+static void ifStatement()
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int thenJump = emitJump(OP_JUMP_IF_FALSE);
+    statement();
+
+    patchJump(thenJump);
+}
+
 static void block()
 {
     while (!checkTokenType(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF))
@@ -622,6 +654,10 @@ static void statement()
     if (match(TOKEN_PRINT))
     {
         printStatement();
+    }
+    else if (match(TOKEN_IF))
+    {
+        ifStatement();
     }
     // blocks
     else if (match(TOKEN_LEFT_BRACE))
