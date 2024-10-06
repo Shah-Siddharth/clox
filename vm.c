@@ -280,6 +280,12 @@ static InterpretResult run()
                 vm.instructionPointer += offset;
             break;
         }
+        case OP_LOOP:
+        {
+            uint16_t offset = READ_SHORT();
+            vm.instructionPointer -= offset;
+            break;
+        }
         case OP_RETURN:
         {
             // Exit interpreter
