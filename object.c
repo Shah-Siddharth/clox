@@ -23,6 +23,20 @@ static Object *allocateObject(size_t size, ObjectType type)
     return object;
 }
 
+FunctionObject *newFunction()
+{
+    FunctionObject *function = ALLOCATE_OBJECT(FunctionObject, OBJECT_FUNCTION);
+    function->arity = 0;
+    function->name = NULL;
+    initChunk(&function->chunk);
+    return function;
+}
+
+static void printFunction(FunctionObject *function)
+{
+    printf("<fn %s>", function->name->chars);
+}
+
 static StringObject *allocateString(char *chars, int length, uint32_t hash)
 {
     StringObject *string = ALLOCATE_OBJECT(StringObject, OBJECT_STRING);
@@ -84,6 +98,9 @@ void printObject(Value value)
 {
     switch (OBJ_TYPE(value))
     {
+    case OBJECT_FUNCTION:
+        printFunction(AS_FUNCTION(value));
+        break;
     case OBJECT_STRING:
         printf("%s", AS_CSTRING(value));
         break;

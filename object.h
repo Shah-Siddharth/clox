@@ -2,11 +2,13 @@
 #define clox_object_h
 
 #include "common.h"
+#include "chunk.h"
 #include "value.h"
 
 // denotes the type of an object
 typedef enum
 {
+    OBJECT_FUNCTION,
     OBJECT_STRING
 } ObjectType;
 
@@ -17,6 +19,15 @@ struct Object
     struct Object *next; // points to the next object in the linked list
 };
 
+// function objects
+typedef struct
+{
+    Object object;
+    int arity;
+    Chunk chunk;
+    StringObject *name;
+} FunctionObject;
+
 // string objects
 struct StringObject
 {
@@ -25,6 +36,8 @@ struct StringObject
     char *chars;
     uint32_t hash; // since strings are immutable, we can calculate and store hash up front
 };
+
+FunctionObject *newFunction();
 
 StringObject *copyString(const char *chars, int length);
 StringObject *takeString(char *chars, int length);
@@ -38,9 +51,13 @@ static inline bool isObjectType(Value value, ObjectType type)
 // macro that returns the type of object
 #define OBJ_TYPE(value) (AS_OBJECT(value)->type)
 
+#define IS_FUNCTION(value) isObjectType(value, OBJECT_FUNCTION)
 #define IS_STRING(value) isObjectType(value, OBJECT_STRING)
 
-// takes pointer to object of type string and returns StringObject* pointer
+// takes pointer to a value of type function and returns FunctionObject* pointer
+#define AS_FUNCTION(value) ((FunctionObject *)AS_OBJECT(value))
+
+// takes pointer to a value of type string and returns StringObject* pointer
 #define AS_STRING(value) ((StringObject *)AS_OBJECT(value))
 
 // takes pointer to object of type string and returns the character array of the object

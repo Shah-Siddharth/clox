@@ -7,6 +7,13 @@ static void freeObject(Object *object)
 {
   switch (object->type)
   {
+  case OBJECT_FUNCTION:
+  {
+    FunctionObject *function = (FunctionObject *)object;
+    freeChunk(&function->chunk);
+    FREE(FunctionObject, object);
+    break;
+  }
   case OBJECT_STRING:
     StringObject *string = (StringObject *)object;
     FREE_ARRAY(char, string->chars, string->length + 1);
