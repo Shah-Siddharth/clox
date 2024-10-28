@@ -51,8 +51,16 @@ typedef struct
     int depth; // level of nesting where the variable appears
 } Local;
 
+typedef enum
+{
+    TYPE_FUNCTION,
+    TYPE_SCRIPT
+} FunctionType;
+
 typedef struct
 {
+    FunctionObject *function;
+    FunctionType functionType;
     Local locals[UINT8_COUNT];
     int localCount;
     int scopeDepth;
@@ -64,7 +72,7 @@ Chunk *compilingChunk;
 
 static Chunk *getCurrentChunk()
 {
-    return compilingChunk;
+    return &current->function->chunk;
 }
 
 static void errorAt(Token *token, const char *message)
@@ -226,20 +234,34 @@ static void endScope()
     }
 }
 
-static void endCompiler()
+static FunctionObject *endCompiler()
 {
     emitReturn();
+    FunctionObject *function = current->function;
+
 #ifdef DEBUG_PRINT_CODE
     if (!parser.hadError)
-        disassembleChunk(getCurrentChunk(), "code");
+        disassembleChunk(getCurrentChunk(), function->name != NULL ? function->name->chars : "<script>");
 #endif
+
+    return function;
 }
 
-static void initCompiler(Compiler *compiler)
+static void initCompiler(Compiler *compiler, FunctionType type)
 {
+    compiler->function = NULL;
+    compiler->functionType = type;
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->function = newFunction();
     current = compiler;
+
+    // claim the zeroth stack slot in locals array for the VM's internal use.
+    Local *local = &current->locals[current->localCount++];
+    local->depth = 0;
+    // give the slot an empty name so user can't write an identifier referring to it.
+    local->name.start = "";
+    local->name.length = 0;
 }
 
 static void expression();
@@ -810,12 +832,12 @@ static void grouping(bool canAssign)
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-bool compileCode(const char *sourceCode, Chunk *chunk)
+bool compileCode(const char *sourceCode)
 {
     initScanner(sourceCode);
 
     Compiler compiler;
-    initCompiler(&compiler);
+    initCompiler(&compiler, TYPE_SCRIPT);
 
     parser.hadError = false;
     parser.panicMode = false;
@@ -829,6 +851,6 @@ bool compileCode(const char *sourceCode, Chunk *chunk)
         declaration();
     }
 
-    endCompiler();
-    return !parser.hadError;
+    FunctionObject *function = endCompiler();
+    return parser.hadError ? NULL : function;
 }

@@ -34,6 +34,11 @@ FunctionObject *newFunction()
 
 static void printFunction(FunctionObject *function)
 {
+    if (function->name == NULL)
+    {
+        printf("<script>");
+        return;
+    }
     printf("<fn %s>", function->name->chars);
 }
 

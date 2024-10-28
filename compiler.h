@@ -5,6 +5,6 @@
 #include "vm.h"
 
 // compile source code and fill the chunk with bytecode
-bool compileCode(const char *sourceCode, Chunk *chunk);
+bool compileCode(const char *sourceCode);
 
 #endif
