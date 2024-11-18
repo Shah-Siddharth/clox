@@ -13,6 +13,7 @@ VM vm;
 static void resetVMStack()
 {
     vm.stackTop = vm.stack; // initially points to beginning of the array
+    vm.frameCount = 0;
 }
 
 static void runtimeError(const char *format, ...)
@@ -23,8 +24,9 @@ static void runtimeError(const char *format, ...)
     va_end(args);
     fputs("\n", stderr);
 
-    size_t instruction = vm.instructionPointer - vm.chunk->code - 1;
-    int line = vm.chunk->lines[instruction];
+    CallFrame *frame = &vm.frames[vm.frameCount - 1];
+    size_t instruction = frame->instructionPointer - frame->function->chunk.code - 1;
+    int line = frame->function->chunk.lines[instruction];
     fprintf(stderr, "[line %d] in script\n", line);
     resetVMStack();
 }
@@ -39,22 +41,20 @@ void initVM()
 
 InterpretResult interpretCode(const char *sourceCode)
 {
-    Chunk chunk;
-    initChunk(&chunk);
-
-    if (!compileCode(sourceCode, &chunk))
+    FunctionObject *function = compileCode(sourceCode);
+    if (function == NULL)
     {
-        freeChunk(&chunk);
         return INTERPRET_COMPILE_ERROR;
     }
 
-    vm.chunk = &chunk;
-    vm.instructionPointer = vm.chunk->code;
+    // store top-level function on stack and prepare initial CallFrame to execute it
+    pushToStack(OBJECT_VAL(function));
+    CallFrame *frame = &vm.frames[vm.frameCount++];
+    frame->function = function;
+    frame->instructionPointer = function->chunk.code;
+    frame->slots = vm.stack;
 
-    InterpretResult result = run();
-
-    freeChunk(&chunk);
-    return result;
+    return run();
 }
 
 void freeVM()
@@ -103,12 +103,15 @@ static void concatenate()
 
 static InterpretResult run()
 {
-#define READ_BYTE() (*vm.instructionPointer++)
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+    // current topmost callframe
+    CallFrame *frame = &vm.frames[vm.frameCount - 1];
+
+#define READ_BYTE() (*frame->instructionPointer++)
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 
 // takes the next two bytes from chunk and build a 16 bit unsigned int out of them
 #define READ_SHORT() \
-    (vm.instructionPointer += 2, (uint16_t)((vm.instructionPointer[-2] << 8) | vm.instructionPointer[-1]))
+    (frame->instructionPointer += 2, (uint16_t)((frame->instructionPointer[-2] << 8) | frame->instructionPointer[-1]))
 
 #define READ_STRING() AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)                        \
@@ -137,7 +140,7 @@ static InterpretResult run()
             printf(" ]");
         }
         printf("\n");
-        disassembleInstruction(vm.chunk, (int)(vm.instructionPointer - vm.chunk->code));
+        disassembleInstruction(&frame->function->chunk, (int)(frame->instructionPointer - frame->function->chunk.code));
 #endif
 
         // read byte pointed by IP and advance IP
@@ -227,14 +230,14 @@ static InterpretResult run()
         case OP_GET_LOCAL:
         {
             uint8_t slot = READ_BYTE();
-            pushToStack(vm.stack[slot]);
+            pushToStack(frame->slots[slot]);
             break;
         }
         // take the assigned value from top of the stack and store it in the stack slot.
         case OP_SET_LOCAL:
         {
             uint8_t slot = READ_BYTE();
-            vm.stack[slot] = peek(0);
+            frame->slots[slot] = peek(0);
             break;
         }
         case OP_DEFINE_GLOBAL:
@@ -270,20 +273,20 @@ static InterpretResult run()
         case OP_JUMP:
         {
             uint16_t offset = READ_SHORT();
-            vm.instructionPointer += offset;
+            frame->instructionPointer += offset;
             break;
         }
         case OP_JUMP_IF_FALSE:
         {
             uint16_t offset = READ_SHORT();
             if (isFalsey(peek(0)))
-                vm.instructionPointer += offset;
+                frame->instructionPointer += offset;
             break;
         }
         case OP_LOOP:
         {
             uint16_t offset = READ_SHORT();
-            vm.instructionPointer -= offset;
+            frame->instructionPointer -= offset;
             break;
         }
         case OP_RETURN:
