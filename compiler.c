@@ -832,7 +832,7 @@ static void grouping(bool canAssign)
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-bool compileCode(const char *sourceCode)
+FunctionObject *compileCode(const char *sourceCode)
 {
     initScanner(sourceCode);
 
@@ -841,8 +841,6 @@ bool compileCode(const char *sourceCode)
 
     parser.hadError = false;
     parser.panicMode = false;
-
-    compilingChunk = chunk;
 
     advance();
 
