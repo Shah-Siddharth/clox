@@ -49,10 +49,7 @@ InterpretResult interpretCode(const char *sourceCode)
 
     // store top-level function on stack and prepare initial CallFrame to execute it
     pushToStack(OBJECT_VAL(function));
-    CallFrame *frame = &vm.frames[vm.frameCount++];
-    frame->function = function;
-    frame->instructionPointer = function->chunk.code;
-    frame->slots = vm.stack;
+    call(function, 0);
 
     return run();
 }
@@ -79,6 +76,32 @@ Value popFromStack()
 static Value peek(int distance)
 {
     return vm.stackTop[-(distance + 1)];
+}
+
+static bool call(FunctionObject *function, int argCount)
+{
+    CallFrame *frame = &vm.frames[vm.frameCount++];
+    frame->function = function;
+    frame->instructionPointer = function->chunk.code;
+    frame->slots = vm.stackTop - argCount - 1;
+    return true;
+}
+
+static bool callValue(Value callee, int argCount)
+{
+    if (IS_OBJECT(callee))
+    {
+        switch (OBJ_TYPE(callee))
+        {
+        case OBJECT_FUNCTION:
+            return call(AS_FUNCTION(callee), argCount);
+
+        default:
+            break;
+        }
+    }
+    runtimeError("Can only call functions and classes.");
+    return false;
 }
 
 static bool isFalsey(Value value)
@@ -287,6 +310,16 @@ static InterpretResult run()
         {
             uint16_t offset = READ_SHORT();
             frame->instructionPointer -= offset;
+            break;
+        }
+        case OP_CALL:
+        {
+            int argCount = READ_BYTE();
+            if (!callValue(peek(argCount), argCount))
+            {
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            frame = &vm.frames[vm.frameCount - 1];
             break;
         }
         case OP_RETURN:
