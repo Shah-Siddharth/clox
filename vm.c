@@ -24,10 +24,26 @@ static void runtimeError(const char *format, ...)
     va_end(args);
     fputs("\n", stderr);
 
-    CallFrame *frame = &vm.frames[vm.frameCount - 1];
-    size_t instruction = frame->instructionPointer - frame->function->chunk.code - 1;
-    int line = frame->function->chunk.lines[instruction];
-    fprintf(stderr, "[line %d] in script\n", line);
+    for (int i = vm.frameCount - 1; i >= 0; i++)
+    {
+        CallFrame *frame = &vm.frames[i];
+        FunctionObject *function = frame->function;
+
+        // -1 because the IP is already sitting on the next instruction
+        size_t instruction = frame->instructionPointer - function->chunk.code - 1;
+
+        fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
+
+        if (function->name == NULL)
+        {
+            fprintf(stderr, "script\n");
+        }
+        else
+        {
+            fprintf(stderr, "%s()\n", function->name->chars);
+        }
+    }
+
     resetVMStack();
 }
 
@@ -80,6 +96,20 @@ static Value peek(int distance)
 
 static bool call(FunctionObject *function, int argCount)
 {
+    // runtime error if user passes too many or too few arguments
+    if (argCount != function->arity)
+    {
+        runtimeError("Expected %d arguments but got %d.", function->arity, argCount);
+        return false;
+    }
+
+    // runtime error if deep call chain exceeds stack
+    if (vm.frameCount == FRAMES_MAX)
+    {
+        runtimeError("Stack overflow.");
+        return false;
+    }
+
     CallFrame *frame = &vm.frames[vm.frameCount++];
     frame->function = function;
     frame->instructionPointer = function->chunk.code;
