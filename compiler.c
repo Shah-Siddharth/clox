@@ -214,6 +214,8 @@ static void patchJump(int offset)
 
 static void emitReturn()
 {
+    // return nil for functions that don't return anything
+    emitByte(OP_NIL);
     emitByte(OP_RETURN);
 }
 
@@ -806,6 +808,25 @@ static void printStatement()
     emitByte(OP_PRINT);
 }
 
+static void returnStatement()
+{
+    if (current->functionType == TYPE_SCRIPT)
+    {
+        errorAtCurrent("Can't return from top-level code");
+    }
+
+    if (match(TOKEN_SEMICOLON))
+    {
+        emitReturn();
+    }
+    else
+    {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+        emitByte(OP_RETURN);
+    }
+}
+
 static void whileStatement()
 {
     int loopStart = getCurrentChunk()->count;
@@ -884,6 +905,10 @@ static void statement()
     else if (match(TOKEN_IF))
     {
         ifStatement();
+    }
+    else if (match(TOKEN_RETURN))
+    {
+        returnStatement();
     }
     else if (match(TOKEN_WHILE))
     {

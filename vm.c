@@ -354,8 +354,18 @@ static InterpretResult run()
         }
         case OP_RETURN:
         {
-            // Exit interpreter
-            return INTERPRET_OK;
+            Value result = popFromStack();
+            vm.frameCount--;
+            if (vm.frameCount == 0)
+            {
+                popFromStack();
+                return INTERPRET_OK;
+            }
+
+            vm.stackTop = frame->slots;
+            pushToStack(result);
+            frame = &vm.frames[vm.frameCount - 1];
+            break;
         }
 
         default:
