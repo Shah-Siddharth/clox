@@ -29,6 +29,7 @@ typedef struct
     StringObject *name;
 } FunctionObject;
 
+// NativeFunction is a pointer to a function that returns Value
 typedef Value (*NativeFunction)(int argCount, Value *args);
 
 typedef struct
