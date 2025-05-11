@@ -9,6 +9,7 @@
 typedef enum
 {
     OBJECT_FUNCTION,
+    OBJECT_NATIVE,
     OBJECT_STRING
 } ObjectType;
 
@@ -28,6 +29,14 @@ typedef struct
     StringObject *name;
 } FunctionObject;
 
+typedef Value (*NativeFunction)(int argCount, Value *args);
+
+typedef struct
+{
+    Object object;
+    NativeFunction function;
+} NativeObject;
+
 // string objects
 struct StringObject
 {
@@ -38,6 +47,8 @@ struct StringObject
 };
 
 FunctionObject *newFunction();
+
+NativeObject *newNative(NativeFunction function);
 
 StringObject *copyString(const char *chars, int length);
 StringObject *takeString(char *chars, int length);
@@ -52,10 +63,14 @@ static inline bool isObjectType(Value value, ObjectType type)
 #define OBJ_TYPE(value) (AS_OBJECT(value)->type)
 
 #define IS_FUNCTION(value) isObjectType(value, OBJECT_FUNCTION)
+#define IS_NATIVE(value) isObjectType(value, OBJECT_NATIVE);
 #define IS_STRING(value) isObjectType(value, OBJECT_STRING)
 
 // takes pointer to a value of type function and returns FunctionObject* pointer
 #define AS_FUNCTION(value) ((FunctionObject *)AS_OBJECT(value))
+
+// takes a pointer to a value of type NativeObject and extracts the C function pointer from it
+#define AS_NATIVE(value) (((NativeObject *)AS_OBJECT(value))->function);
 
 // takes pointer to a value of type string and returns StringObject* pointer
 #define AS_STRING(value) ((StringObject *)AS_OBJECT(value))

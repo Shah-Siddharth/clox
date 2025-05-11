@@ -32,6 +32,13 @@ FunctionObject *newFunction()
     return function;
 }
 
+NativeObject *newNative(NativeFunction function)
+{
+    NativeObject *native = ALLOCATE_OBJECT(NativeObject, OBJECT_NATIVE);
+    native->function = function;
+    return native;
+}
+
 static void printFunction(FunctionObject *function)
 {
     if (function->name == NULL)
@@ -105,6 +112,9 @@ void printObject(Value value)
     {
     case OBJECT_FUNCTION:
         printFunction(AS_FUNCTION(value));
+        break;
+    case OBJECT_NATIVE:
+        printf("<native fn>");
         break;
     case OBJECT_STRING:
         printf("%s", AS_CSTRING(value));

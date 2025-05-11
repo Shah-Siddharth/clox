@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "common.h"
 #include "debug.h"
@@ -9,6 +10,11 @@
 #include "vm.h"
 
 VM vm;
+
+static Value clockNative(int argCount, Value *args)
+{
+    return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
 
 static void resetVMStack()
 {
@@ -47,11 +53,23 @@ static void runtimeError(const char *format, ...)
     resetVMStack();
 }
 
+static void defineNative(const char *name, NativeFunction function)
+{
+    pushToStack(OBJECT_VAL(copyString(name, (int)strlen(name))));
+    pushToStack(OBJECT_VAL(newNative(function)));
+    tableAdd(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+    popFromStack();
+    popFromStack();
+}
+
 void initVM()
 {
     resetVMStack();
     initTable(&vm.globals);
     initTable(&vm.strings);
+
+    defineNative("clock", clockNative);
+
     vm.objects = NULL;
 }
 
@@ -125,6 +143,12 @@ static bool callValue(Value callee, int argCount)
         {
         case OBJECT_FUNCTION:
             return call(AS_FUNCTION(callee), argCount);
+        case OBJECT_NATIVE:
+            NativeFunction native = AS_NATIVE(callee);
+            Value result = native(argCount, vm.stackTop - argCount);
+            vm.stackTop -= argCount + 1;
+            pushToStack(result);
+            return true;
 
         default:
             break;

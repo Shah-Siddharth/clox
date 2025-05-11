@@ -14,11 +14,18 @@ static void freeObject(Object *object)
     FREE(FunctionObject, object);
     break;
   }
+  case OBJECT_NATIVE:
+  {
+    FREE(NativeObject, object);
+    break;
+  }
   case OBJECT_STRING:
+  {
     StringObject *string = (StringObject *)object;
     FREE_ARRAY(char, string->chars, string->length + 1);
     FREE(StringObject, object);
     break;
+  }
   }
 }
 
