@@ -8,6 +8,7 @@
 // denotes the type of an object
 typedef enum
 {
+    OBJECT_CLOSURE,
     OBJECT_FUNCTION,
     OBJECT_NATIVE,
     OBJECT_STRING
@@ -47,6 +48,14 @@ struct StringObject
     uint32_t hash; // since strings are immutable, we can calculate and store hash up front
 };
 
+typedef struct
+{
+    Object object;
+    FunctionObject *function;
+} ClosureObject;
+
+ClosureObject *newClosure(FunctionObject *function);
+
 FunctionObject *newFunction();
 
 NativeObject *newNative(NativeFunction function);
@@ -63,9 +72,12 @@ static inline bool isObjectType(Value value, ObjectType type)
 // macro that returns the type of object
 #define OBJ_TYPE(value) (AS_OBJECT(value)->type)
 
+#define IS_CLOSURE(value) isObjectType(value, OBJECT_CLOSURE)
 #define IS_FUNCTION(value) isObjectType(value, OBJECT_FUNCTION)
 #define IS_NATIVE(value) isObjectType(value, OBJECT_NATIVE);
 #define IS_STRING(value) isObjectType(value, OBJECT_STRING)
+
+#define AS_CLOSURE(value) ((ClosureObject) *)AS_OBJECT(value)
 
 // takes pointer to a value of type function and returns FunctionObject* pointer
 #define AS_FUNCTION(value) ((FunctionObject *)AS_OBJECT(value))

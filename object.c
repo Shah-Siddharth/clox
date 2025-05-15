@@ -23,6 +23,13 @@ static Object *allocateObject(size_t size, ObjectType type)
     return object;
 }
 
+ClosureObject *newClosure(FunctionObject *function)
+{
+    ClosureObject *closure = ALLOCATE_OBJECT(ClosureObject, OBJECT_CLOSURE);
+    closure->function = function;
+    return closure;
+}
+
 FunctionObject *newFunction()
 {
     FunctionObject *function = ALLOCATE_OBJECT(FunctionObject, OBJECT_FUNCTION);
@@ -110,6 +117,8 @@ void printObject(Value value)
 {
     switch (OBJ_TYPE(value))
     {
+    case OBJECT_CLOSURE:
+        printFunction(AS_CLOSURE(value)->function);
     case OBJECT_FUNCTION:
         printFunction(AS_FUNCTION(value));
         break;

@@ -7,6 +7,11 @@ static void freeObject(Object *object)
 {
   switch (object->type)
   {
+  case OBJECT_CLOSURE:
+  {
+    FREE(ClosureObject, object);
+    break;
+  }
   case OBJECT_FUNCTION:
   {
     FunctionObject *function = (FunctionObject *)object;
