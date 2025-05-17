@@ -77,7 +77,7 @@ static inline bool isObjectType(Value value, ObjectType type)
 #define IS_NATIVE(value) isObjectType(value, OBJECT_NATIVE);
 #define IS_STRING(value) isObjectType(value, OBJECT_STRING)
 
-#define AS_CLOSURE(value) ((ClosureObject) *)AS_OBJECT(value)
+#define AS_CLOSURE(value) ((ClosureObject *)AS_OBJECT(value))
 
 // takes pointer to a value of type function and returns FunctionObject* pointer
 #define AS_FUNCTION(value) ((FunctionObject *)AS_OBJECT(value))
