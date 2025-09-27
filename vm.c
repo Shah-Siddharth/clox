@@ -33,7 +33,7 @@ static void runtimeError(const char *format, ...)
     for (int i = vm.frameCount - 1; i >= 0; i++)
     {
         CallFrame *frame = &vm.frames[i];
-        FunctionObject *function = frame->function;
+        FunctionObject *function = frame->closure->function;
 
         // -1 because the IP is already sitting on the next instruction
         size_t instruction = frame->instructionPointer - function->chunk.code - 1;
@@ -83,7 +83,10 @@ InterpretResult interpretCode(const char *sourceCode)
 
     // store top-level function on stack and prepare initial CallFrame to execute it
     pushToStack(OBJECT_VAL(function));
-    call(function, 0);
+    ClosureObject *closure = newClosure(function);
+    popFromStack();
+    pushToStack(OBJECT_VAL(closure));
+    call(closure, 0);
 
     return run();
 }
@@ -112,12 +115,12 @@ static Value peek(int distance)
     return vm.stackTop[-(distance + 1)];
 }
 
-static bool call(FunctionObject *function, int argCount)
+static bool call(ClosureObject *closure, int argCount)
 {
     // runtime error if user passes too many or too few arguments
-    if (argCount != function->arity)
+    if (argCount != closure->function->arity)
     {
-        runtimeError("Expected %d arguments but got %d.", function->arity, argCount);
+        runtimeError("Expected %d arguments but got %d.", closure->function->arity, argCount);
         return false;
     }
 
@@ -129,8 +132,8 @@ static bool call(FunctionObject *function, int argCount)
     }
 
     CallFrame *frame = &vm.frames[vm.frameCount++];
-    frame->function = function;
-    frame->instructionPointer = function->chunk.code;
+    frame->closure = closure;
+    frame->instructionPointer = closure->function->chunk.code;
     frame->slots = vm.stackTop - argCount - 1;
     return true;
 }
@@ -141,8 +144,8 @@ static bool callValue(Value callee, int argCount)
     {
         switch (OBJ_TYPE(callee))
         {
-        case OBJECT_FUNCTION:
-            return call(AS_FUNCTION(callee), argCount);
+        case OBJECT_CLOSURE:
+            return call(AS_CLOSURE(callee), argCount);
         case OBJECT_NATIVE:
             NativeFunction native = AS_NATIVE(callee);
             Value result = native(argCount, vm.stackTop - argCount);
@@ -184,7 +187,7 @@ static InterpretResult run()
     CallFrame *frame = &vm.frames[vm.frameCount - 1];
 
 #define READ_BYTE() (*frame->instructionPointer++)
-#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
 
 // takes the next two bytes from chunk and build a 16 bit unsigned int out of them
 #define READ_SHORT() \
@@ -217,7 +220,7 @@ static InterpretResult run()
             printf(" ]");
         }
         printf("\n");
-        disassembleInstruction(&frame->function->chunk, (int)(frame->instructionPointer - frame->function->chunk.code));
+        disassembleInstruction(&frame->closure->function->chunk, (int)(frame->instructionPointer - frame->closure->function->chunk.code));
 #endif
 
         // read byte pointed by IP and advance IP
@@ -374,6 +377,13 @@ static InterpretResult run()
                 return INTERPRET_RUNTIME_ERROR;
             }
             frame = &vm.frames[vm.frameCount - 1];
+            break;
+        }
+        case OP_CLOSURE:
+        {
+            FunctionObject *function = AS_FUNCTION(READ_CONSTANT());
+            ClosureObject *closure = newClosure(function);
+            pushToStack(OBJECT_VAL(closure));
             break;
         }
         case OP_RETURN:

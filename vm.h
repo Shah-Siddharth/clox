@@ -11,7 +11,7 @@
 
 typedef struct
 {
-    FunctionObject *function;
+    ClosureObject *closure;
     uint8_t *instructionPointer;
     Value *slots; // The first slot on the VM's value stack that the function can use
 } CallFrame;
