@@ -610,6 +610,12 @@ static int resolveUpValue(Compiler *compiler, Token *name)
         return addUpValue(compiler, (uint8_t)local, true);
     }
 
+    int upvalue = resolveUpValue(compiler->enclosing, name);
+    if (upvalue != -1)
+    {
+        return addUpValue(compiler, (uint8_t)upvalue, false);
+    }
+
     return -1;
 }
 
