@@ -34,6 +34,7 @@ FunctionObject *newFunction()
 {
     FunctionObject *function = ALLOCATE_OBJECT(FunctionObject, OBJECT_FUNCTION);
     function->arity = 0;
+    function->upvalueCount = 0;
     function->name = NULL;
     initChunk(&function->chunk);
     return function;

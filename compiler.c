@@ -51,6 +51,12 @@ typedef struct
     int depth; // level of nesting where the variable appears
 } Local;
 
+typedef struct
+{
+    uint8_t index;
+    bool isLocal;
+} Upvalue;
+
 typedef enum
 {
     TYPE_FUNCTION,
@@ -64,6 +70,7 @@ typedef struct Compiler
     FunctionType functionType;
     Local locals[UINT8_COUNT];
     int localCount;
+    Upvalue upvalues[UINT8_COUNT];
     int scopeDepth;
 } Compiler;
 
@@ -411,6 +418,12 @@ static void namedVariable(Token name, bool canAssign)
         getOp = OP_GET_LOCAL;
         setOp = OP_SET_LOCAL;
     }
+    // check for local variables declared in any of the enclosing functions
+    else if ((arg = resolveUpValue(current, &name)) != -1)
+    {
+        getOp = OP_GET_UPVALUE;
+        setOp = OP_SET_UPVALUE;
+    }
     // if no local variable is found, we assume it to be global variable
     else
     {
@@ -554,6 +567,47 @@ static int resolveLocal(Compiler *compiler, Token *name)
             }
             return i;
         }
+    }
+
+    return -1;
+}
+
+static int addUpValue(Compiler *compiler, uint8_t index, bool isLocal)
+{
+    int upValueCount = compiler->function->upvalueCount;
+
+    // check if the function already has an upvalue for that variable
+    for (int i = 0; i < upValueCount; i++)
+    {
+        Upvalue *upvalue = &compiler->upvalues[i];
+        if (upvalue->index == index && upvalue->isLocal == isLocal)
+        {
+            return i;
+        }
+    }
+
+    // make sure number of upvalues don't overflow the limit
+    if (upValueCount == UINT8_COUNT)
+    {
+        errorAtCurrent("Too many closure variables in function.");
+        return 0;
+    }
+
+    compiler->upvalues[upValueCount].isLocal = isLocal;
+    compiler->upvalues[upValueCount].index = index;
+    return compiler->function->upvalueCount++;
+}
+
+// tries to resolve an identifier as a local variable in the enclosing compiler.
+// if not found, the function returns -1
+static int resolveUpValue(Compiler *compiler, Token *name)
+{
+    if (compiler->enclosing == NULL)
+        return -1;
+    int local = resolveLocal(compiler->enclosing, name);
+    if (local != -1)
+    {
+        return addUpValue(compiler, (uint8_t)local, true);
     }
 
     return -1;

@@ -26,6 +26,7 @@ typedef struct
 {
     Object object;
     int arity;
+    int upvalueCount;
     Chunk chunk;
     StringObject *name;
 } FunctionObject;
