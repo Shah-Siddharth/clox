@@ -735,6 +735,15 @@ static void function(FunctionType type)
 
     FunctionObject *function = endCompiler();
     emitBytes(OP_CLOSURE, makeConstant(OBJECT_VAL(function)));
+
+    // for each upvalue the closure has to capture, there will be 2 bytes emitted.
+    // if 1st byte is 1, it is a local variable in the enclosing function. If it is 0, it is an upvalue
+    // 2nd byte is the local slot or upvalue index
+    for (int i = 0; i < function->upvalueCount; i++)
+    {
+        emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+        emitByte(compiler.upvalues[i].index);
+    }
 }
 
 static void funDeclaration()
