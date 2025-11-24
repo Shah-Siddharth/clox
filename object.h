@@ -11,7 +11,8 @@ typedef enum
     OBJECT_CLOSURE,
     OBJECT_FUNCTION,
     OBJECT_NATIVE,
-    OBJECT_STRING
+    OBJECT_STRING,
+    OBJECT_UPVALUE
 } ObjectType;
 
 // acts like a 'base class / struct' for all objects
@@ -49,10 +50,18 @@ struct StringObject
     uint32_t hash; // since strings are immutable, we can calculate and store hash up front
 };
 
+typedef struct UpvalueObject
+{
+    Object object;
+    Value *location;
+} UpvalueObject;
+
 typedef struct
 {
     Object object;
     FunctionObject *function;
+    UpvalueObject **upvalues;
+    int upvalueCount;
 } ClosureObject;
 
 ClosureObject *newClosure(FunctionObject *function);
@@ -64,6 +73,8 @@ NativeObject *newNative(NativeFunction function);
 StringObject *copyString(const char *chars, int length);
 StringObject *takeString(char *chars, int length);
 void printObject(Value value);
+
+UpvalueObject *newUpvalue(Value *slot);
 
 static inline bool isObjectType(Value value, ObjectType type)
 {

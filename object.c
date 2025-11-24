@@ -25,8 +25,16 @@ static Object *allocateObject(size_t size, ObjectType type)
 
 ClosureObject *newClosure(FunctionObject *function)
 {
+    UpvalueObject **upvalues = ALLOCATE(UpvalueObject *, function->upvalueCount);
+    for (int i = 0; i < function->upvalueCount; i++)
+    {
+        upvalues[i] = NULL;
+    }
+
     ClosureObject *closure = ALLOCATE_OBJECT(ClosureObject, OBJECT_CLOSURE);
     closure->function = function;
+    closure->upvalues = upvalues;
+    closure->upvalueCount = function->upvalueCount;
     return closure;
 }
 
@@ -114,6 +122,11 @@ StringObject *takeString(char *chars, int length)
     return allocateString(chars, length, hash);
 }
 
+UpvalueObject *newUpvalue(Value *slot)
+{
+    UpvalueObject *upvalue = ALLOCATE_OBJECT(UpvalueObject, OBJECT_UPVALUE);
+}
+
 void printObject(Value value)
 {
     switch (OBJ_TYPE(value))
@@ -129,6 +142,9 @@ void printObject(Value value)
         break;
     case OBJECT_STRING:
         printf("%s", AS_CSTRING(value));
+        break;
+    case OBJECT_UPVALUE:
+        printf("upvalue");
         break;
     }
 }

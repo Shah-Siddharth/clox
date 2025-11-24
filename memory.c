@@ -9,6 +9,8 @@ static void freeObject(Object *object)
   {
   case OBJECT_CLOSURE:
   {
+    ClosureObject *closure = (ClosureObject *)object;
+    FREE_ARRAY(UpvalueObject *, closure->upvalues, closure->upvalueCount);
     FREE(ClosureObject, object);
     break;
   }
@@ -29,6 +31,11 @@ static void freeObject(Object *object)
     StringObject *string = (StringObject *)object;
     FREE_ARRAY(char, string->chars, string->length + 1);
     FREE(StringObject, object);
+    break;
+  }
+  case OBJECT_UPVALUE:
+  {
+    FREE(UpvalueObject, object);
     break;
   }
   }
